@@ -1,39 +1,44 @@
 #include <iostream>
 #include <simlib.h>
 
+// Time
+const int SIMULATION_TIME = 1 * 365 * 24 * 60; // 1 year
+
+// Truck
+const int TRUCK_COUNT = 10;
 const int FUEL_CAPACITY = 1000;
-const int TRUCK_CAPACITY = 20;
-const int TRUCK_COUNT = 2;
+const int TRUCK_CAPACITY_MAX = 20;
+const int TRUCK_CAPACITY_MIN = 7;
+
+// Factory
+const int WAREHOUSE_CAPACITY = 100000;
+const int PACKAGE_MANUFACTURING_TIME = 10; // min
+
+// Loading
 const int PACKAGE_LOAD_TIME = 3; // min
-const int WAREHOUSE_CAPACITY = 10000;
+
+// Unloading
+const int PACKAGE_UNLOAD_TIME = 3;	  // min
+const int UNLOAD_EXTRA_TIME_MIN = 5;  // min
+const int UNLOAD_EXTRA_TIME_MAX = 20; // min
 
 Store fuelStore[TRUCK_COUNT];
 Store warehouse("Warehouse", WAREHOUSE_CAPACITY);
-Store truckCargo[TRUCK_COUNT];
 
 Queue loadingDockQueue("Loading Dock Queue");
 Facility loadingDock(loadingDockQueue);
 Facility trucks[TRUCK_COUNT];
 Queue truckParkingQueue("Truck Parking Queue");
+
+Histogram truckPackageCountHistogram(0.0, 1.0, 21);
 Stat truckParkingTime("Truck Parking Time");
-Stat truckFuelUsage[TRUCK_COUNT];
+Stat truckFuelFilled[TRUCK_COUNT];
+
+Stat testStat("Test stat");
+int packagesManufactured = 0;
+int packagesDelivered = 0;
 
 double fuelConsumption = 0.4;
-
-double maxTravelDistance(int truckId)
-{
-	return fuelStore[truckId].Used() / fuelConsumption;
-}
-
-double time(double distance) // km -> min
-{
-	return distance / (60 / 70.0); // 70km/h
-}
-
-int fuel(double distance)
-{
-	return distance * fuelConsumption;
-}
 
 class TruckLifecycle : public Process
 {
@@ -46,42 +51,57 @@ public:
 
 	void Behavior()
 	{
-		fuelStore[truckId].SetName("Fuel Store " + std::to_string(truckId));
-		fuelStore[truckId].SetCapacity(FUEL_CAPACITY);
+
 		fillFuel();
 
 		while (true)
 		{
+			double distance = Uniform(10, 300);
+			int packageCount = Uniform(TRUCK_CAPACITY_MIN, TRUCK_CAPACITY_MAX);
+
 			int startTime = Time;
 			Seize(trucks[truckId]);
-
 			int endTime = Time;
+
 			truckParkingTime(endTime - startTime);
 
-			load();
+			truckPackageCountHistogram(packageCount);
+			load(packageCount);
 
-			travel(false, truckId);
+			travel(distance);
+
+			unload(packageCount);
+			packagesDelivered += packageCount;
+
+			travel(distance);
+
+			Release(trucks[truckId]);
 		}
 	}
 
-	void load()
+	void load(int packageCount)
 	{
-		int packagesToLoad = Uniform(7, TRUCK_CAPACITY);
-
 		Seize(loadingDock);
-		Enter(warehouse, packagesToLoad);
-		Enter(truckCargo[truckId], packagesToLoad);
-		Wait(packagesToLoad * PACKAGE_LOAD_TIME);
+		Enter(warehouse, packageCount);
+		Wait(packageCount * PACKAGE_LOAD_TIME);
 		Release(loadingDock);
 	}
 
-	void travel(bool isTravelingHome, int truckId)
+	void unload(int packageCount)
 	{
-		double distance = Uniform(10, 300);
-		if (distance > maxTravelDistance(truckId))
+		// Unloading
+		Wait(packageCount * PACKAGE_UNLOAD_TIME);
+
+		// Waiting for paperwork/in queue on the depo
+		Wait(Uniform(5, 20));
+	}
+
+	void travel(double distance)
+	{
+		if (distance > maxTravelDistance())
 		{
 			// Not enough fuel for the whole drive
-			double distanceToFuelingStation = Uniform(0, maxTravelDistance(truckId));
+			double distanceToFuelingStation = Uniform(0, maxTravelDistance());
 			consumeFuel(fuel(distanceToFuelingStation));
 			Wait(time(distanceToFuelingStation));
 
@@ -100,54 +120,67 @@ public:
 			consumeFuel(fuel(distance));
 			Wait(time(distance));
 		}
-
-		if (isTravelingHome)
-		{
-			Release(trucks[truckId]);
-		}
-		else
-		{
-			Wait(60);
-			travel(true, truckId);
-		}
 	}
 
 	void fillFuel()
 	{
 		int fuelToFill = FUEL_CAPACITY - fuelStore[truckId].Used();
 		Enter(fuelStore[truckId], fuelToFill);
-		truckFuelUsage[truckId](fuelToFill);
+		truckFuelFilled[truckId](fuelToFill);
 	}
 
 	void consumeFuel(int fuel)
 	{
 		Leave(fuelStore[truckId], fuel);
 	}
+
+	double maxTravelDistance()
+	{
+		return fuelStore[truckId].Used() / fuelConsumption;
+	}
+
+	double time(double distance) // km -> min
+	{
+		return distance / (60 / 70.0); // 70km/h
+	}
+
+	int fuel(double distance)
+	{
+		return distance * fuelConsumption;
+	}
 };
 
 class PackageGenerator : public Process
 {
-public:
-	PackageGenerator()
-	{
-		Enter(warehouse, WAREHOUSE_CAPACITY);
-	}
 	void Behavior()
 	{
-		Leave(warehouse, 1);
-		Activate(Time + Exponential(10));
+		if (warehouse.Used() > 0)
+		{
+			Leave(warehouse, 1);
+			packagesManufactured += 1;
+		}
 	}
 };
 
-class Delivery : public Event
+class InitProcess : public Process
 {
 	void Behavior()
 	{
-		(new PackageGenerator)->Activate();
+		Enter(warehouse, WAREHOUSE_CAPACITY); // Empty warehouse
 		for (int i = 0; i < TRUCK_COUNT; i++)
 		{
 			(new TruckLifecycle(i))->Activate();
 		}
+	}
+};
+
+class PackageGeneratorEvent : public Event
+{
+	void Behavior()
+	{
+		(new PackageGenerator)->Activate();
+
+		Activate(Time + PACKAGE_MANUFACTURING_TIME);
 	}
 };
 
@@ -157,28 +190,35 @@ int main()
 	{
 		trucks[i].SetName("Truck" + std::to_string(i));
 		trucks[i].SetQueue(truckParkingQueue);
-		truckFuelUsage[i].SetName("Truck Fuel Usage " + std::to_string(i));
-		truckCargo[i].SetName("Truck Cargo " + std::to_string(i));
+		truckFuelFilled[i].SetName("Truck Fuel Filled " + std::to_string(i));
+		fuelStore[i].SetName("Fuel Store " + std::to_string(i));
+		fuelStore[i].SetCapacity(FUEL_CAPACITY);
 	}
 
-	Init(0, 10000);
-	(new PackageGenerator)->Activate();
-	(new Delivery)->Activate();
+	Init(0, SIMULATION_TIME);
+
+	(new InitProcess)->Activate(0);
+	(new PackageGeneratorEvent)->Activate(1);
 
 	Run();
 	loadingDock.Output();
 	truckParkingQueue.Output();
-	int totalFuelUsage = 0;
+	int totalFuelFilled = 0;
 	for (int i = 0; i < TRUCK_COUNT; i++)
 	{
 		trucks[i].Output();
 		fuelStore[i].Output();
-		truckFuelUsage[i].Output();
-		truckCargo[i].Output();
-		totalFuelUsage = truckFuelUsage[i].Sum();
+		truckFuelFilled[i].Output();
+		totalFuelFilled = truckFuelFilled[i].Sum();
 	}
 	truckParkingTime.Output();
-	std::cout << "Total fuel usage: " << totalFuelUsage << std::endl;
+
+	truckPackageCountHistogram.Output();
+	std::cout << "Packages manufactured: " << packagesManufactured << std::endl;
+	std::cout << "Packages delivered: " << packagesDelivered << std::endl;
+	std::cout << "Total fuel bought: " << totalFuelFilled << std::endl;
+
+	testStat.Output();
 
 	return 0;
 }
