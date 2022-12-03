@@ -8,13 +8,14 @@ extern Queue truckParkingQueue;
 extern Histogram truckPackageCountHistogram;
 extern int packagesDelivered;
 
-TruckLifecycle::TruckLifecycle(int id, Configuration config)
+TruckLifecycle::TruckLifecycle(int id, TruckParams params, Configuration config)
 {
+	this->params = params;
 	this->config = config;
 	truck.SetName("Truck " + std::to_string(id));
 	truck.SetQueue(truckParkingQueue);
 	fuelStore.SetName("FuelStore " + std::to_string(id));
-	fuelStore.SetCapacity(config.truckFuelTankCapacity);
+	fuelStore.SetCapacity(params.fuelCapacity);
 }
 
 void TruckLifecycle::load(int packageCount)
@@ -40,7 +41,7 @@ void TruckLifecycle::travel(double distance)
 
 int TruckLifecycle::fillFuel()
 {
-	int fuelToFill = config.truckFuelTankCapacity - fuelStore.Used();
+	int fuelToFill = params.fuelCapacity - fuelStore.Used();
 	Enter(fuelStore, fuelToFill);
 	return fuelToFill;
 }
@@ -52,7 +53,7 @@ void TruckLifecycle::consumeFuel(int fuel)
 
 double TruckLifecycle::maxTravelDistance()
 {
-	return fuelStore.Used() / config.truckFuelConsumption;
+	return fuelStore.Used() / (double)params.fuelConsumption;
 }
 
 double TruckLifecycle::time(double distance) // km -> min
@@ -62,5 +63,5 @@ double TruckLifecycle::time(double distance) // km -> min
 
 int TruckLifecycle::fuel(double distance)
 {
-	return distance * config.truckFuelConsumption;
+	return distance * params.fuelConsumption;
 }

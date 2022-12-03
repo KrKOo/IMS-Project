@@ -1,7 +1,7 @@
 #include "DieselTruckLifecycle.hpp"
 #include "globals.hpp"
 
-DieselTruckLifecycle::DieselTruckLifecycle(int id, Configuration config) : TruckLifecycle(id, config)
+DieselTruckLifecycle::DieselTruckLifecycle(int id, TruckParams params, Configuration config) : TruckLifecycle(id, params, config)
 {
 }
 

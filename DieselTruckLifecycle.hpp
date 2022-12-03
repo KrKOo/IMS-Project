@@ -12,7 +12,7 @@ class DieselTruckLifecycle : public TruckLifecycle
 	void Behavior();
 
 public:
-	DieselTruckLifecycle(int id, Configuration config);
+	DieselTruckLifecycle(int id, TruckParams params, Configuration config);
 };
 
 #endif //!__DIESELTRUCKLIFECYCLE__H__

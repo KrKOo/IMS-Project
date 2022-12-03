@@ -3,6 +3,11 @@
 
 #include "ArgumentParser.hpp"
 
+#define DIESEL_CAPACITY 1000
+#define ELECTRIC_CAPACITY 1002
+#define DIESEL_FUEL_CONSUMPTION 1003
+#define ELECTRIC_FUEL_CONSUMPTION 1004
+
 ArgumentParser::ArgumentParser(int argc, char **argv)
 {
 	this->argc = argc;
@@ -14,9 +19,13 @@ ArgumentParser::ArgumentParser(int argc, char **argv)
 Arguments ArgumentParser::parse(Arguments &defaultArguments)
 {
 	Arguments arguments = defaultArguments;
-	const char *shortOptions = "n:f:c:t:s:m";
+	const char *shortOptions = "d:e:s:m";
 	struct option longOptions[] = {
 		{"help", no_argument, 0, 'h'},
+		{"df", required_argument, 0, DIESEL_CAPACITY},
+		{"ef", required_argument, 0, ELECTRIC_CAPACITY},
+		{"dc", required_argument, 0, DIESEL_FUEL_CONSUMPTION},
+		{"ec", required_argument, 0, ELECTRIC_FUEL_CONSUMPTION},
 		{0, 0, 0, 0}};
 
 	int opt;
@@ -30,34 +39,24 @@ Arguments ArgumentParser::parse(Arguments &defaultArguments)
 		case 'h':
 			printHelp();
 			exit(0);
-		case 'n':
-			arguments.truckCount = getNumericArgument();
+		case 'd':
+			arguments.dieselTruckCount = getNumericArgument();
 			break;
-		case 'f':
-			arguments.fuelTankCapacity = getNumericArgument();
+		case 'e':
+			arguments.electricTruckCount = getNumericArgument();
 			break;
-		case 'c':
-			arguments.fuelConsumption = getNumericArgument();
+		case DIESEL_CAPACITY:
+			arguments.dieselFuelCapacity = getNumericArgument();
 			break;
-		case 't':
-		{
-			std::string value = getArgument();
-			if (value == "e")
-			{
-				arguments.isElectric = true;
-			}
-			else if (value == "d")
-			{
-				arguments.isElectric = false;
-			}
-			else
-			{
-				std::cerr << "Invalid argument for -t: " << value << std::endl;
-				printHelp();
-				exit(INVALID_ARUMENT_ERROR);
-			}
+		case ELECTRIC_CAPACITY:
+			arguments.electricFuelCapacity = getNumericArgument();
 			break;
-		}
+		case DIESEL_FUEL_CONSUMPTION:
+			arguments.dieselFuelConsumption = getNumericArgument();
+			break;
+		case ELECTRIC_FUEL_CONSUMPTION:
+			arguments.electricFuelConsumption = getNumericArgument();
+			break;
 		case 's':
 			arguments.simulationDuration = getNumericArgument();
 			break;
@@ -79,12 +78,14 @@ Arguments ArgumentParser::parse(Arguments &defaultArguments)
 
 void ArgumentParser::printHelp()
 {
-	std::cout << "-n - Truck count" << std::endl;
-	std::cout << "-f - Fuel capacity" << std::endl;
-	std::cout << "-c - Fuel consumption /100km" << std::endl;
-	std::cout << "-t - Truck type [e|d]" << std::endl;
-	std::cout << "-s - Simulation duration" << std::endl;
-	std::cout << "-m - Package manufacturing time" << std::endl;
+	std::cout << "-d Diesel truck count" << std::endl;
+	std::cout << "-e Electric truck count" << std::endl;
+	std::cout << "-s Simulation duration" << std::endl;
+	std::cout << "-m Package manufacturing time" << std::endl;
+	std::cout << "--df Diesel fuel capacity" << std::endl;
+	std::cout << "--ef Electric battery capacity" << std::endl;
+	std::cout << "--dc Diesel fuel consumption /1km" << std::endl;
+	std::cout << "--ec Electric battery consumption /1km" << std::endl;
 }
 
 std::string ArgumentParser::getArgument()

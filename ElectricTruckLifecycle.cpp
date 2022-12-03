@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-ElectricTruckLifecycle::ElectricTruckLifecycle(int id, Configuration config) : TruckLifecycle(id, config)
+ElectricTruckLifecycle::ElectricTruckLifecycle(int id, TruckParams params, Configuration config) : TruckLifecycle(id, params, config)
 {
 	electricityChargedAtFactory.SetName("Electricity charged at factory");
 	electricityChargedAtDestination.SetName("Electricity charged at destination");
@@ -72,7 +72,7 @@ int ElectricTruckLifecycle::checkFuelAndFuelUpIfNeeded(double distance)
 
 int ElectricTruckLifecycle::fillFuel(double distance)
 {
-	int maxFuelToFill = config.truckFuelTankCapacity - fuelStore.Used();
+	int maxFuelToFill = params.fuelCapacity - fuelStore.Used();
 
 	int fuelToFill = fuel(distance) > maxFuelToFill ? maxFuelToFill : fuel(distance);
 

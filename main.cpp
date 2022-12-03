@@ -1,6 +1,7 @@
 #include <iostream>
 #include <simlib.h>
 #include <vector>
+#include <memory>
 
 #include "Configuration.hpp"
 #include "DieselTruckLifecycle.hpp"
@@ -10,18 +11,19 @@
 
 Configuration config = {
 	.simulationDuration = 1 * 365 * 24 * 60,
-	.truckCount = 10,
-	.truckFuelTankCapacity = 540000, // 540kWh
-	.truckFuelConsumption = 11,		 // 1.1kWh/100km
+	// .dieselFuelCapacity = 1000000,	 // 1000l
+	// .electricFuelCapacity = 540000,	 // 540kWh
+	// .dieselFuelConsumption = 350,	 // 35l/100km
+	// .electricFuelConsumption = 1100, // 1.1kWh/100km
 	.truckCargoCapacityMin = 7,
 	.truckCargoCapacityMax = 20,
-	.warehouseCapacity = 100000,
+	.warehouseCapacity = 100000000,
 	.packageManufacturingTime = 3,
 	.packageLoadTime = 3,
 	.packageUnloadTime = 3,
 	.unloadExtraTimeMin = 5,
 	.unloadExtraTimeMax = 20,
-	.travelDistanceMin = 230,
+	.travelDistanceMin = 10,
 	.travelDistanceMax = 260,
 };
 
@@ -70,9 +72,6 @@ class PackageGeneratorEvent : public Event
 
 void simulate(Arguments args)
 {
-	config.truckCount = args.truckCount;
-	config.truckFuelTankCapacity = args.fuelTankCapacity;
-	config.truckFuelConsumption = args.fuelConsumption;
 	config.packageManufacturingTime = args.packageManufacturingTime;
 	config.simulationDuration = args.simulationDuration;
 
@@ -81,20 +80,27 @@ void simulate(Arguments args)
 	(new InitProcess)->Activate(0);
 	(new PackageGeneratorEvent)->Activate(1);
 
-	std::vector<TruckLifecycle *> trucks;
-	for (auto i = 0; i < config.truckCount; i++)
+	std::vector<DieselTruckLifecycle *> dieselTrucks;
+	for (auto i = 0; i < args.dieselTruckCount; i++)
 	{
-		TruckLifecycle *truckLifecycle;
-		if (args.isElectric)
-		{
-			truckLifecycle = new ElectricTruckLifecycle(i, config);
-		}
-		else
-		{
-			truckLifecycle = new DieselTruckLifecycle(i, config);
-		}
+		TruckParams params = {
+			.fuelCapacity = args.dieselFuelCapacity,
+			.fuelConsumption = args.dieselFuelConsumption,
+		};
+		auto truckLifecycle = new DieselTruckLifecycle(i, params, config);
+		dieselTrucks.push_back(truckLifecycle);
+		truckLifecycle->Activate(1);
+	}
 
-		trucks.push_back(truckLifecycle);
+	std::vector<ElectricTruckLifecycle *> electricTrucks;
+	for (auto i = 0; i < args.electricTruckCount; i++)
+	{
+		TruckParams params = {
+			.fuelCapacity = args.electricFuelCapacity,
+			.fuelConsumption = args.electricFuelConsumption,
+		};
+		auto truckLifecycle = new ElectricTruckLifecycle(i, params, config);
+		electricTrucks.push_back(truckLifecycle);
 		truckLifecycle->Activate(1);
 	}
 
@@ -108,17 +114,19 @@ void simulate(Arguments args)
 	unsigned long totalElectricityChargedAtDestination = 0;
 	unsigned long totalParkingTime = 0;
 
-	for (auto &truck : trucks)
+	for (DieselTruckLifecycle *dieselTruck : dieselTrucks)
 	{
-		totalParkingTime += truck->truckParkingTime.Sum();
-		totalFuelFilled += truck->fuelFilled.Sum();
-		totalTraveledDistance += truck->traveledDistance.Sum();
-		if (args.isElectric)
-		{
-			ElectricTruckLifecycle *electricTruck = static_cast<ElectricTruckLifecycle *>(truck);
-			totalElectricityChargedAtFactory += electricTruck->electricityChargedAtFactory.Sum();
-			totalElectricityChargedAtDestination += electricTruck->electricityChargedAtDestination.Sum();
-		}
+		totalFuelFilled += dieselTruck->fuelFilled.Sum();
+		totalTraveledDistance += dieselTruck->traveledDistance.Sum();
+		totalParkingTime += dieselTruck->truckParkingTime.Sum();
+	}
+
+	for (ElectricTruckLifecycle *electricTruck : electricTrucks)
+	{
+		totalElectricityChargedAtFactory += electricTruck->electricityChargedAtFactory.Sum();
+		totalElectricityChargedAtDestination += electricTruck->electricityChargedAtDestination.Sum();
+		totalTraveledDistance += electricTruck->traveledDistance.Sum();
+		totalParkingTime += electricTruck->truckParkingTime.Sum();
 	}
 
 	truckParkingTime.Output();
@@ -138,10 +146,12 @@ void simulate(Arguments args)
 int main(int argc, char **argv)
 {
 	Arguments defaultArguments = {
-		.truckCount = 4,
-		.fuelTankCapacity = 1000000, // 1000l
-		.fuelConsumption = 350,		 // 35l/100km
-		.isElectric = false,
+		.dieselTruckCount = 0,
+		.electricTruckCount = 0,
+		.dieselFuelCapacity = 1000000,	 // 1000l
+		.electricFuelCapacity = 540000,	 // 540kWh
+		.dieselFuelConsumption = 350,	 // 35l/100km
+		.electricFuelConsumption = 1100, // 1.1kWh/100km
 		.packageManufacturingTime = 3,
 		.simulationDuration = 1 * 365 * 24 * 60,
 	};

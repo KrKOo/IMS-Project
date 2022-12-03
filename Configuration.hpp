@@ -6,9 +6,10 @@ struct Configuration
 	// Time
 	int simulationDuration;
 	// Truck
-	int truckCount;
-	int truckFuelTankCapacity;
-	double truckFuelConsumption;
+	// int dieselFuelCapacity;
+	// int electricFuelCapacity;
+	// int dieselFuelConsumption;
+	// int electricFuelConsumption;
 	int truckCargoCapacityMin;
 	int truckCargoCapacityMax;
 	// Factory

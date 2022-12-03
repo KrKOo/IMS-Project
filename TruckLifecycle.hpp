@@ -4,13 +4,21 @@
 #include <simlib.h>
 #include "Configuration.hpp"
 
+struct TruckParams
+{
+	int fuelCapacity;
+	int fuelConsumption;
+};
+
 class TruckLifecycle : public Process
 {
 protected:
 	Facility truck;
 
+	TruckParams params;
 	Configuration config;
 
+	virtual void Behavior() = 0;
 	void load(int packageCount);
 	void unload(int packageCount);
 	void travel(double distance);
@@ -21,7 +29,7 @@ protected:
 	int fuel(double distance);
 
 public:
-	TruckLifecycle(int id, Configuration config);
+	TruckLifecycle(int id, TruckParams params, Configuration config);
 
 	Store fuelStore;
 	Stat fuelFilled;

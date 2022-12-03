@@ -13,7 +13,7 @@ class ElectricTruckLifecycle : public TruckLifecycle
 	int fillFuel(double distance);
 
 public:
-	ElectricTruckLifecycle(int id, Configuration config);
+	ElectricTruckLifecycle(int id, TruckParams params, Configuration config);
 	Stat electricityChargedAtFactory;
 	Stat electricityChargedAtDestination;
 };

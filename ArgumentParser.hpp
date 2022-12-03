@@ -6,10 +6,14 @@
 
 struct Arguments
 {
-	int truckCount;
-	int fuelTankCapacity;
-	int fuelConsumption;
-	bool isElectric;
+	int dieselTruckCount;
+	int electricTruckCount;
+
+	int dieselFuelCapacity;
+	int electricFuelCapacity;
+
+	int dieselFuelConsumption;
+	int electricFuelConsumption;
 
 	int packageManufacturingTime;
 	int simulationDuration;
