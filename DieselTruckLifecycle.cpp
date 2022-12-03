@@ -1,21 +1,8 @@
 #include "DieselTruckLifecycle.hpp"
+#include "globals.hpp"
 
-extern Store warehouse;
-extern Facility loadingDock;
-extern Queue truckParkingQueue;
-
-// Stats
-extern Stat truckParkingTime;
-extern Histogram truckPackageCountHistogram;
-extern int packagesDelivered;
-
-DieselTruckLifecycle::DieselTruckLifecycle(int id, Configuration config)
+DieselTruckLifecycle::DieselTruckLifecycle(int id, Configuration config) : TruckLifecycle(id, config)
 {
-	this->config = config;
-	truck.SetName("Truck " + std::to_string(id));
-	truck.SetQueue(truckParkingQueue);
-	fuelStore.SetName("FuelStore " + std::to_string(id));
-	fuelStore.SetCapacity(config.truckFuelTankCapacity);
 }
 
 void DieselTruckLifecycle::Behavior()
@@ -24,7 +11,7 @@ void DieselTruckLifecycle::Behavior()
 
 	while (true)
 	{
-		double distance = Uniform(10, 300);
+		double distance = Uniform(config.travelDistanceMin, config.travelDistanceMax);
 		int packageCount = Uniform(config.truckCargoCapacityMin, config.truckCargoCapacityMax);
 
 		int startTime = Time;
@@ -37,31 +24,16 @@ void DieselTruckLifecycle::Behavior()
 		load(packageCount);
 
 		travel(distance);
+		traveledDistance(distance);
 
 		unload(packageCount);
 		packagesDelivered += packageCount;
 
 		travel(distance);
+		traveledDistance(distance);
 
 		Release(truck);
 	}
-}
-
-void DieselTruckLifecycle::load(int packageCount)
-{
-	Seize(loadingDock);
-	Enter(warehouse, packageCount);
-	Wait(packageCount * config.packageLoadTime);
-	Release(loadingDock);
-}
-
-void DieselTruckLifecycle::unload(int packageCount)
-{
-	// Unloading
-	Wait(packageCount * config.packageUnloadTime);
-
-	// Waiting for paperwork/in queue on the depo
-	Wait(Uniform(config.unloadExtraTimeMin, config.unloadExtraTimeMax));
 }
 
 void DieselTruckLifecycle::travel(double distance)
@@ -74,7 +46,8 @@ void DieselTruckLifecycle::travel(double distance)
 		Wait(time(distanceToFuelingStation));
 
 		// At the fueling station
-		fillFuel();
+		int filledAmount = fillFuel();
+		fuelFilled(filledAmount);
 		Wait(60);
 
 		// Continue to the destination
@@ -88,31 +61,4 @@ void DieselTruckLifecycle::travel(double distance)
 		consumeFuel(fuel(distance));
 		Wait(time(distance));
 	}
-}
-
-void DieselTruckLifecycle::fillFuel()
-{
-	int fuelToFill = config.truckFuelTankCapacity - fuelStore.Used();
-	Enter(fuelStore, fuelToFill);
-	fuelFilled(fuelToFill);
-}
-
-void DieselTruckLifecycle::consumeFuel(int fuel)
-{
-	Leave(fuelStore, fuel);
-}
-
-double DieselTruckLifecycle::maxTravelDistance()
-{
-	return fuelStore.Used() / config.truckFuelConsumption;
-}
-
-double DieselTruckLifecycle::time(double distance) // km -> min
-{
-	return distance / (60 / 70.0); // 70km/h
-}
-
-int DieselTruckLifecycle::fuel(double distance)
-{
-	return distance * config.truckFuelConsumption;
 }

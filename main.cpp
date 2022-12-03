@@ -1,14 +1,17 @@
 #include <iostream>
 #include <simlib.h>
+#include <vector>
 
 #include "Configuration.hpp"
 #include "DieselTruckLifecycle.hpp"
+#include "ElectricTruckLifecycle.hpp"
+#include "globals.hpp"
 
 Configuration config = {
 	.simulationDuration = 1 * 365 * 24 * 60,
 	.truckCount = 10,
-	.truckFuelTankCapacity = 1000,
-	.truckFuelConsumption = 0.4,
+	.truckFuelTankCapacity = 540000,
+	.truckFuelConsumption = 1000,
 	.truckCargoCapacityMin = 7,
 	.truckCargoCapacityMax = 20,
 	.warehouseCapacity = 100000,
@@ -17,10 +20,11 @@ Configuration config = {
 	.packageUnloadTime = 3,
 	.unloadExtraTimeMin = 5,
 	.unloadExtraTimeMax = 20,
+	.travelDistanceMin = 10,
+	.travelDistanceMax = 400,
 };
 
 Store warehouse("Warehouse", config.warehouseCapacity);
-
 Queue loadingDockQueue("Loading Dock Queue");
 Facility loadingDock(loadingDockQueue);
 Queue truckParkingQueue("Truck Parking Queue");
@@ -32,8 +36,6 @@ Stat testStat("Test stat");
 
 int packagesManufactured = 0;
 int packagesDelivered = 0;
-
-double fuelConsumption = 0.4;
 
 class PackageGenerator : public Process
 {
@@ -52,10 +54,6 @@ class InitProcess : public Process
 	void Behavior()
 	{
 		Enter(warehouse, config.warehouseCapacity); // Empty warehouse
-		for (int i = 0; i < config.truckCount; i++)
-		{
-			(new DieselTruckLifecycle(i, config))->Activate();
-		}
 	}
 };
 
@@ -69,6 +67,12 @@ class PackageGeneratorEvent : public Event
 	}
 };
 
+template <typename Base, typename T>
+inline bool instanceof (const T *ptr)
+{
+	return dynamic_cast<const Base *>(ptr) != nullptr;
+}
+
 int main()
 {
 	Init(0, config.simulationDuration);
@@ -76,20 +80,40 @@ int main()
 	(new InitProcess)->Activate(0);
 	(new PackageGeneratorEvent)->Activate(1);
 
+	std::vector<ElectricTruckLifecycle *> trucks;
+	for (auto i = 0; i < config.truckCount; i++)
+	{
+		auto truckLifecycle = new ElectricTruckLifecycle(i, config);
+		truckLifecycle->Activate(1);
+		trucks.push_back(truckLifecycle);
+	}
+
 	Run();
 	loadingDock.Output();
 	truckParkingQueue.Output();
-	int totalFuelFilled = 0;
-	for (int i = 0; i < config.truckCount; i++)
+	unsigned long totalFuelFilled = 0;
+	unsigned long totalTraveledDistance = 0;
+	unsigned long totalElectricityChargedAtFactory = 0;
+	unsigned long totalElectricityChargedAtDestination = 0;
+
+	for (auto &truck : trucks)
 	{
-		// totalFuelFilled = truckFuelFilled[i].Sum();
+		totalFuelFilled += truck->fuelFilled.Sum();
+		totalTraveledDistance += truck->traveledDistance.Sum();
+		totalElectricityChargedAtFactory += truck->electricityChargedAtFactory.Sum();
+		totalElectricityChargedAtDestination += truck->electricityChargedAtDestination.Sum();
+		std::cout << truck->fuelFilled.Sum() << "   " << truck->traveledDistance.Sum() << std::endl;
 	}
+
 	truckParkingTime.Output();
 
 	truckPackageCountHistogram.Output();
 	std::cout << "Packages manufactured: " << packagesManufactured << std::endl;
 	std::cout << "Packages delivered: " << packagesDelivered << std::endl;
 	std::cout << "Total fuel bought: " << totalFuelFilled << std::endl;
+	std::cout << "Total electricity charged at factory: " << totalElectricityChargedAtFactory << std::endl;
+	std::cout << "Total electricity charged at destination: " << totalElectricityChargedAtDestination << std::endl;
+	std::cout << "Total traveled distance: " << totalTraveledDistance << std::endl;
 
 	testStat.Output();
 

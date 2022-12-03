@@ -1,31 +1,18 @@
-#ifndef __TRUCKLIFECYCLE__H__
-#define __TRUCKLIFECYCLE__H__
+#ifndef __DIESELTRUCKLIFECYCLE__H__
+#define __DIESELTRUCKLIFECYCLE__H__
 
 #include <simlib.h>
+
 #include "Configuration.hpp"
+#include "TruckLifecycle.hpp"
 
-class DieselTruckLifecycle : public Process
+class DieselTruckLifecycle : public TruckLifecycle
 {
-	Store fuelStore;
-	Facility truck;
-	Stat fuelFilled;
-
-	Configuration config;
-
-	void Behavior();
-
-	void load(int packageCount);
-	void unload(int packageCount);
 	void travel(double distance);
-
-	void fillFuel();
-	void consumeFuel(int fuel);
-	double maxTravelDistance();
-	double time(double distance);
-	int fuel(double distance);
+	void Behavior();
 
 public:
 	DieselTruckLifecycle(int id, Configuration config);
 };
 
-#endif //!__TRUCKLIFECYCLE__H__
+#endif //!__DIESELTRUCKLIFECYCLE__H__

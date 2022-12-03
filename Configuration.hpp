@@ -20,6 +20,9 @@ struct Configuration
 	int packageUnloadTime;
 	int unloadExtraTimeMin;
 	int unloadExtraTimeMax;
+	// Travel
+	int travelDistanceMin;
+	int travelDistanceMax;
 };
 
 #endif //!__CONFIGURATION__H__
