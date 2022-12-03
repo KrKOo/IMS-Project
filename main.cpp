@@ -67,12 +67,6 @@ class PackageGeneratorEvent : public Event
 	}
 };
 
-template <typename Base, typename T>
-inline bool instanceof (const T *ptr)
-{
-	return dynamic_cast<const Base *>(ptr) != nullptr;
-}
-
 int main()
 {
 	Init(0, config.simulationDuration);
@@ -95,9 +89,11 @@ int main()
 	unsigned long totalTraveledDistance = 0;
 	unsigned long totalElectricityChargedAtFactory = 0;
 	unsigned long totalElectricityChargedAtDestination = 0;
+	unsigned long totalParkingTime = 0;
 
 	for (auto &truck : trucks)
 	{
+		totalParkingTime += truck->truckParkingTime.Sum();
 		totalFuelFilled += truck->fuelFilled.Sum();
 		totalTraveledDistance += truck->traveledDistance.Sum();
 		totalElectricityChargedAtFactory += truck->electricityChargedAtFactory.Sum();
@@ -114,6 +110,7 @@ int main()
 	std::cout << "Total electricity charged at factory: " << totalElectricityChargedAtFactory << std::endl;
 	std::cout << "Total electricity charged at destination: " << totalElectricityChargedAtDestination << std::endl;
 	std::cout << "Total traveled distance: " << totalTraveledDistance << std::endl;
+	std::cout << "Total parking time: " << totalParkingTime << std::endl;
 
 	testStat.Output();
 

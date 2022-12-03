@@ -5,7 +5,6 @@ extern Facility loadingDock;
 extern Queue truckParkingQueue;
 
 // Stats
-extern Stat truckParkingTime;
 extern Histogram truckPackageCountHistogram;
 extern int packagesDelivered;
 
@@ -20,10 +19,8 @@ TruckLifecycle::TruckLifecycle(int id, Configuration config)
 
 void TruckLifecycle::load(int packageCount)
 {
-	Seize(loadingDock);
 	Enter(warehouse, packageCount);
 	Wait(packageCount * config.packageLoadTime);
-	Release(loadingDock);
 }
 
 void TruckLifecycle::unload(int packageCount)

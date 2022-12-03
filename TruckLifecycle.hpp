@@ -26,6 +26,7 @@ public:
 	Store fuelStore;
 	Stat fuelFilled;
 	Stat traveledDistance;
+	Stat truckParkingTime;
 };
 
 #endif //!__TRUCKLIFECYCLE__H__

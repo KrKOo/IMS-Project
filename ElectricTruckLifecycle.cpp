@@ -16,11 +16,8 @@ void ElectricTruckLifecycle::Behavior()
 		double distance = Uniform(config.travelDistanceMin, config.travelDistanceMax);
 		int packageCount = Uniform(config.truckCargoCapacityMin, config.truckCargoCapacityMax);
 
-		int startTime = Time;
 		Seize(truck);
-		int endTime = Time;
 
-		truckParkingTime(endTime - startTime);
 		truckPackageCountHistogram(packageCount);
 
 		// 2 * distance because we need to go there and back
@@ -30,7 +27,14 @@ void ElectricTruckLifecycle::Behavior()
 			electricityChargedAtFactory(filledAtFactory);
 		}
 
+		int startTime = Time;
+		Seize(loadingDock);
+		int endTime = Time;
+		truckParkingTime(endTime - startTime);
+
 		load(packageCount);
+		Release(loadingDock);
+
 		travel(distance);
 		traveledDistance(distance);
 		unload(packageCount);
