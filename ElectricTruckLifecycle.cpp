@@ -64,7 +64,7 @@ int ElectricTruckLifecycle::checkFuelAndFuelUpIfNeeded(double distance)
 		int initialFuel = fuelStore.Used();
 		int newFuelLevel = fillFuel(distance);
 		filled = newFuelLevel - initialFuel;
-		Wait(60);
+		Wait(fuelingTime(initialFuel, newFuelLevel));
 	}
 
 	return filled;
@@ -79,4 +79,16 @@ int ElectricTruckLifecycle::fillFuel(double distance)
 	Enter(fuelStore, fuelToFill);
 
 	return fuelStore.Used();
+}
+
+// function sqrt(x) <0-1> * MAX_CHARGE_TIME
+double ElectricTruckLifecycle::fuelingTime(double initialLevel, double finalLevel)
+{
+	double initialLevelPercentage = initialLevel / params.fuelCapacity;
+	double finalLevelPercentage = finalLevel / params.fuelCapacity;
+
+	double initialTimePercentage = initialLevelPercentage * initialLevelPercentage;
+	double finalTimePercentage = finalLevelPercentage * finalLevelPercentage;
+
+	return (finalTimePercentage - initialTimePercentage) * MAX_CHARGE_TIME;
 }

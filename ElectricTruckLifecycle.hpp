@@ -6,11 +6,14 @@
 #include "Configuration.hpp"
 #include "TruckLifecycle.hpp"
 
+#define MAX_CHARGE_TIME 300 // 5 hours
+
 class ElectricTruckLifecycle : public TruckLifecycle
 {
 	void Behavior();
 	int checkFuelAndFuelUpIfNeeded(double distance);
 	int fillFuel(double distance);
+	double fuelingTime(double initialLevel, double finalLevel);
 
 public:
 	ElectricTruckLifecycle(int id, TruckParams params, Configuration config);
