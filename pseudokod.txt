@@ -1,0 +1,72 @@
+for(int i = 0; i < počet kamiónov; i++) {
+	vytvor proces kamiónu;
+}
+
+// Pseudokód procesu dieselového kamiónu
+
+proces_kamiónu() {
+	natankuj nádrž do plna;
+
+	while(true){
+		získaj trasu a počet paliet;
+
+		čakaj na uvolnenie nakladacej plošiny;
+
+		zaber nakladaciu plošinu;
+		nalož_do_kamiónu(počet_paliet);
+		uvoľni nakladaciu plošinu;
+
+		cestuj(trasa);
+
+		vylož_z_kamiónu(počet_paliet);
+
+		cestuj(trasa);
+	}
+}
+
+cestuj(trasa) {
+	if(kamión nemá dostatok paliva na trasu) {
+		prejdi trasu k čerpacej stanici;
+		spotrebuj palivo k čerpacej stanici;
+
+		naplnenie nádrže do plna;
+
+		prejdi zvyšnú trasu;
+		spotrebuj palivo na zvyšnú trasu;
+	}
+	else {
+		prejdi trasu;
+		spotrebuj palivo na trasu;
+	}
+}
+
+
+// Pseudokód pre elektrické kamióny
+
+proces_kamiónu() {
+	nabi batériu do plna;
+
+	while(true) {
+		získaj trasu a počet paliet;
+
+		// nabíjanie vo firme
+		if (kamión nemá dosť energie na trasu * 2) {
+			nabi batériu na trasu * 2 alebo do plna, ked je trasa moc dlhá
+		}
+
+		čakaj na uvolnenie nakladacej plošiny;
+
+		zaber nakladaciu plošinu;
+		nalož_do_kamiónu(počet_paliet);
+		uvoľni nakladaciu plošinu;
+
+		cestuj(trasa);
+
+		// nabíjanie v depe
+		if (kamión nemá dosť energie na trasu) {
+			nabi batériu na trasu
+		}
+
+		cestuj(trasa);
+	}
+}

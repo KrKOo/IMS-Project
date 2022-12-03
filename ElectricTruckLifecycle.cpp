@@ -1,6 +1,8 @@
 #include "ElectricTruckLifecycle.hpp"
 #include "globals.hpp"
 
+#include <iostream>
+
 ElectricTruckLifecycle::ElectricTruckLifecycle(int id, Configuration config) : TruckLifecycle(id, config)
 {
 	electricityChargedAtFactory.SetName("Electricity charged at factory");

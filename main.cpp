@@ -5,13 +5,14 @@
 #include "Configuration.hpp"
 #include "DieselTruckLifecycle.hpp"
 #include "ElectricTruckLifecycle.hpp"
+#include "ArgumentParser.hpp"
 #include "globals.hpp"
 
 Configuration config = {
 	.simulationDuration = 1 * 365 * 24 * 60,
 	.truckCount = 10,
-	.truckFuelTankCapacity = 540000,
-	.truckFuelConsumption = 1000,
+	.truckFuelTankCapacity = 540000, // 540kWh
+	.truckFuelConsumption = 11,		 // 1.1kWh/100km
 	.truckCargoCapacityMin = 7,
 	.truckCargoCapacityMax = 20,
 	.warehouseCapacity = 100000,
@@ -20,8 +21,8 @@ Configuration config = {
 	.packageUnloadTime = 3,
 	.unloadExtraTimeMin = 5,
 	.unloadExtraTimeMax = 20,
-	.travelDistanceMin = 10,
-	.travelDistanceMax = 400,
+	.travelDistanceMin = 230,
+	.travelDistanceMax = 260,
 };
 
 Store warehouse("Warehouse", config.warehouseCapacity);
@@ -67,22 +68,38 @@ class PackageGeneratorEvent : public Event
 	}
 };
 
-int main()
+void simulate(Arguments args)
 {
+	config.truckCount = args.truckCount;
+	config.truckFuelTankCapacity = args.fuelTankCapacity;
+	config.truckFuelConsumption = args.fuelConsumption;
+	config.packageManufacturingTime = args.packageManufacturingTime;
+	config.simulationDuration = args.simulationDuration;
+
 	Init(0, config.simulationDuration);
 
 	(new InitProcess)->Activate(0);
 	(new PackageGeneratorEvent)->Activate(1);
 
-	std::vector<ElectricTruckLifecycle *> trucks;
+	std::vector<TruckLifecycle *> trucks;
 	for (auto i = 0; i < config.truckCount; i++)
 	{
-		auto truckLifecycle = new ElectricTruckLifecycle(i, config);
-		truckLifecycle->Activate(1);
+		TruckLifecycle *truckLifecycle;
+		if (args.isElectric)
+		{
+			truckLifecycle = new ElectricTruckLifecycle(i, config);
+		}
+		else
+		{
+			truckLifecycle = new DieselTruckLifecycle(i, config);
+		}
+
 		trucks.push_back(truckLifecycle);
+		truckLifecycle->Activate(1);
 	}
 
 	Run();
+
 	loadingDock.Output();
 	truckParkingQueue.Output();
 	unsigned long totalFuelFilled = 0;
@@ -96,9 +113,12 @@ int main()
 		totalParkingTime += truck->truckParkingTime.Sum();
 		totalFuelFilled += truck->fuelFilled.Sum();
 		totalTraveledDistance += truck->traveledDistance.Sum();
-		totalElectricityChargedAtFactory += truck->electricityChargedAtFactory.Sum();
-		totalElectricityChargedAtDestination += truck->electricityChargedAtDestination.Sum();
-		std::cout << truck->fuelFilled.Sum() << "   " << truck->traveledDistance.Sum() << std::endl;
+		if (args.isElectric)
+		{
+			ElectricTruckLifecycle *electricTruck = static_cast<ElectricTruckLifecycle *>(truck);
+			totalElectricityChargedAtFactory += electricTruck->electricityChargedAtFactory.Sum();
+			totalElectricityChargedAtDestination += electricTruck->electricityChargedAtDestination.Sum();
+		}
 	}
 
 	truckParkingTime.Output();
@@ -113,6 +133,22 @@ int main()
 	std::cout << "Total parking time: " << totalParkingTime << std::endl;
 
 	testStat.Output();
+}
 
+int main(int argc, char **argv)
+{
+	Arguments defaultArguments = {
+		.truckCount = 4,
+		.fuelTankCapacity = 1000000, // 1000l
+		.fuelConsumption = 350,		 // 35l/100km
+		.isElectric = false,
+		.packageManufacturingTime = 3,
+		.simulationDuration = 1 * 365 * 24 * 60,
+	};
+
+	ArgumentParser argumentParser(argc, argv);
+	Arguments arguments = argumentParser.parse(defaultArguments);
+
+	simulate(arguments);
 	return 0;
 }
