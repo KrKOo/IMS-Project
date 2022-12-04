@@ -19,7 +19,7 @@ void ElectricTruckLifecycle::Behavior()
 		Seize(truck);
 
 		// 2 * distance because we need to go there and back
-		int filledAtFactory = checkFuelAndFuelUpIfNeeded(2 * way.distance);
+		int filledAtFactory = checkFuelAndFuelUpIfNeeded(2 * way.distance, true);
 		if (filledAtFactory > 0)
 		{
 			electricityChargedAtFactory(filledAtFactory);
@@ -39,7 +39,7 @@ void ElectricTruckLifecycle::Behavior()
 		packagesDelivered += packageCount;
 
 		// Charge up, if we previously couldn't charge it more
-		int filledAtDestination = checkFuelAndFuelUpIfNeeded(way.distance);
+		int filledAtDestination = checkFuelAndFuelUpIfNeeded(way.distance, false);
 		if (filledAtDestination > 0)
 		{
 			electricityChargedAtDestination(filledAtDestination);
@@ -52,7 +52,7 @@ void ElectricTruckLifecycle::Behavior()
 	}
 }
 
-int ElectricTruckLifecycle::checkFuelAndFuelUpIfNeeded(double distance)
+int ElectricTruckLifecycle::checkFuelAndFuelUpIfNeeded(double distance, bool atFactory)
 {
 	int filled = 0;
 	if (distance > maxTravelDistance())
@@ -60,7 +60,7 @@ int ElectricTruckLifecycle::checkFuelAndFuelUpIfNeeded(double distance)
 		int initialFuel = fuelStore.Used();
 		int newFuelLevel = fillFuel(distance);
 		filled = newFuelLevel - initialFuel;
-		Wait(fuelingTime(initialFuel, newFuelLevel));
+		Wait(fuelingTime(initialFuel, newFuelLevel, atFactory));
 	}
 
 	return filled;
@@ -78,13 +78,14 @@ int ElectricTruckLifecycle::fillFuel(double distance)
 }
 
 // function sqrt(x) <0-1> * MAX_CHARGE_TIME
-double ElectricTruckLifecycle::fuelingTime(double initialLevel, double finalLevel)
+double ElectricTruckLifecycle::fuelingTime(double initialLevel, double finalLevel, bool atFactory)
 {
+	double chargeTime = atFactory ? FACTORY_CHARGE_TIME : DEPO_CHARGE_TIME;
 	double initialLevelPercentage = initialLevel / params.fuelCapacity;
 	double finalLevelPercentage = finalLevel / params.fuelCapacity;
 
 	double initialTimePercentage = initialLevelPercentage * initialLevelPercentage;
 	double finalTimePercentage = finalLevelPercentage * finalLevelPercentage;
 
-	return (finalTimePercentage - initialTimePercentage) * MAX_CHARGE_TIME;
+	return (finalTimePercentage - initialTimePercentage) * chargeTime;
 }

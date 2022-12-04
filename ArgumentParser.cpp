@@ -19,7 +19,7 @@ ArgumentParser::ArgumentParser(int argc, char **argv)
 Arguments ArgumentParser::parse(Arguments &defaultArguments)
 {
 	Arguments arguments = defaultArguments;
-	const char *shortOptions = "d:e:s:m";
+	const char *shortOptions = "hd:e:s:m";
 	struct option longOptions[] = {
 		{"help", no_argument, 0, 'h'},
 		{"df", required_argument, 0, DIESEL_CAPACITY},
@@ -78,14 +78,14 @@ Arguments ArgumentParser::parse(Arguments &defaultArguments)
 
 void ArgumentParser::printHelp()
 {
-	std::cout << "-d Diesel truck count" << std::endl;
-	std::cout << "-e Electric truck count" << std::endl;
-	std::cout << "-s Simulation duration" << std::endl;
-	std::cout << "-m Package manufacturing time" << std::endl;
-	std::cout << "--df Diesel fuel capacity" << std::endl;
-	std::cout << "--ef Electric battery capacity" << std::endl;
-	std::cout << "--dc Diesel fuel consumption /1km" << std::endl;
-	std::cout << "--ec Electric battery consumption /1km" << std::endl;
+	std::cout << "-d <count> Diesel truck count" << std::endl;
+	std::cout << "-e <count> Electric truck count" << std::endl;
+	std::cout << "-s <minutes> Simulation duration" << std::endl;
+	std::cout << "-m <minutes> Package manufacturing time" << std::endl;
+	std::cout << "--df <ml> Diesel fuel capacity" << std::endl;
+	std::cout << "--ef <Wh> Electric battery capacity" << std::endl;
+	std::cout << "--dc <ml/km> Diesel fuel consumption" << std::endl;
+	std::cout << "--ec <Wh/km> Electric battery consumption" << std::endl;
 }
 
 std::string ArgumentParser::getArgument()
