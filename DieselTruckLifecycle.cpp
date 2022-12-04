@@ -11,12 +11,10 @@ void DieselTruckLifecycle::Behavior()
 
 	while (true)
 	{
-		double distance = Uniform(config.travelDistanceMin, config.travelDistanceMax);
+		Way way = ways[Uniform(0, ways.size() - 1)];
 		int packageCount = Uniform(config.truckCargoCapacityMin, config.truckCargoCapacityMax);
 
 		Seize(truck);
-
-		truckPackageCountHistogram(packageCount);
 
 		int startTime = Time;
 		Seize(loadingDock);
@@ -26,42 +24,44 @@ void DieselTruckLifecycle::Behavior()
 		load(packageCount);
 		Release(loadingDock);
 
-		travel(distance);
-		traveledDistance(distance);
+		travel(way);
+		traveledDistance(way.distance);
 
 		unload(packageCount);
 		packagesDelivered += packageCount;
 
-		travel(distance);
-		traveledDistance(distance);
+		travel(way);
+		traveledDistance(way.distance);
 
 		Release(truck);
 	}
 }
 
-void DieselTruckLifecycle::travel(double distance)
+void DieselTruckLifecycle::travel(Way way)
 {
-	if (distance > maxTravelDistance())
+	double speed = way.distance / way.time;
+	if (way.distance > maxTravelDistance())
 	{
 		// Not enough fuel for the whole drive
 		double distanceToFuelingStation = Uniform(0, maxTravelDistance());
 		consumeFuel(fuel(distanceToFuelingStation));
-		Wait(time(distanceToFuelingStation));
+
+		Wait(distanceToFuelingStation / speed);
 
 		// At the fueling station
 		int filledAmount = fillFuel();
 		fuelFilled(filledAmount);
-		Wait(60);
+		Wait(20);
 
 		// Continue to the destination
-		double remainingDistance = distance - distanceToFuelingStation;
+		double remainingDistance = way.distance - distanceToFuelingStation;
 		consumeFuel(fuel(remainingDistance));
-		Wait(time(remainingDistance));
+		Wait(remainingDistance / speed);
 	}
 	else
 	{
 		// Enough fuel for the whole drive
-		consumeFuel(fuel(distance));
-		Wait(time(distance));
+		consumeFuel(fuel(way.distance));
+		Wait(way.time);
 	}
 }

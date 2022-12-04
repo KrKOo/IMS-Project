@@ -4,6 +4,12 @@
 #include <simlib.h>
 #include "Configuration.hpp"
 
+struct Way
+{
+	double distance;
+	double time;
+};
+
 struct TruckParams
 {
 	int fuelCapacity;
@@ -18,10 +24,9 @@ protected:
 	TruckParams params;
 	Configuration config;
 
-	virtual void Behavior() = 0;
 	void load(int packageCount);
 	void unload(int packageCount);
-	void travel(double distance);
+	void travel(Way way);
 	int fillFuel();
 	void consumeFuel(int fuel);
 	double maxTravelDistance();

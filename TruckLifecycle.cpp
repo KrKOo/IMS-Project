@@ -1,12 +1,13 @@
 #include "TruckLifecycle.hpp"
+#include "globals.hpp"
 
-extern Store warehouse;
-extern Facility loadingDock;
-extern Queue truckParkingQueue;
+// extern Store warehouse;
+// extern Facility loadingDock;
+// extern Queue truckParkingQueue;
 
-// Stats
-extern Histogram truckPackageCountHistogram;
-extern int packagesDelivered;
+// // Stats
+// extern Histogram truckPackageCountHistogram;
+// extern int packagesDelivered;
 
 TruckLifecycle::TruckLifecycle(int id, TruckParams params, Configuration config)
 {
@@ -33,10 +34,10 @@ void TruckLifecycle::unload(int packageCount)
 	Wait(Uniform(config.unloadExtraTimeMin, config.unloadExtraTimeMax));
 }
 
-void TruckLifecycle::travel(double distance)
+void TruckLifecycle::travel(Way way)
 {
-	Wait(time(distance));
-	consumeFuel(fuel(distance));
+	Wait(way.time);
+	consumeFuel(fuel(way.distance));
 }
 
 int TruckLifecycle::fillFuel()
@@ -54,11 +55,6 @@ void TruckLifecycle::consumeFuel(int fuel)
 double TruckLifecycle::maxTravelDistance()
 {
 	return fuelStore.Used() / (double)params.fuelConsumption;
-}
-
-double TruckLifecycle::time(double distance) // km -> min
-{
-	return distance / (60 / 70.0); // 70km/h
 }
 
 int TruckLifecycle::fuel(double distance)

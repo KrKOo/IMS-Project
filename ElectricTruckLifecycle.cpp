@@ -1,8 +1,6 @@
 #include "ElectricTruckLifecycle.hpp"
 #include "globals.hpp"
 
-#include <iostream>
-
 ElectricTruckLifecycle::ElectricTruckLifecycle(int id, TruckParams params, Configuration config) : TruckLifecycle(id, params, config)
 {
 	electricityChargedAtFactory.SetName("Electricity charged at factory");
@@ -15,15 +13,13 @@ void ElectricTruckLifecycle::Behavior()
 
 	while (true)
 	{
-		double distance = Uniform(config.travelDistanceMin, config.travelDistanceMax);
+		Way way = ways[Uniform(0, ways.size() - 1)];
 		int packageCount = Uniform(config.truckCargoCapacityMin, config.truckCargoCapacityMax);
 
 		Seize(truck);
 
-		truckPackageCountHistogram(packageCount);
-
 		// 2 * distance because we need to go there and back
-		int filledAtFactory = checkFuelAndFuelUpIfNeeded(2 * distance);
+		int filledAtFactory = checkFuelAndFuelUpIfNeeded(2 * way.distance);
 		if (filledAtFactory > 0)
 		{
 			electricityChargedAtFactory(filledAtFactory);
@@ -37,20 +33,20 @@ void ElectricTruckLifecycle::Behavior()
 		load(packageCount);
 		Release(loadingDock);
 
-		travel(distance);
-		traveledDistance(distance);
+		travel(way);
+		traveledDistance(way.distance);
 		unload(packageCount);
 		packagesDelivered += packageCount;
 
 		// Charge up, if we previously couldn't charge it more
-		int filledAtDestination = checkFuelAndFuelUpIfNeeded(distance);
+		int filledAtDestination = checkFuelAndFuelUpIfNeeded(way.distance);
 		if (filledAtDestination > 0)
 		{
 			electricityChargedAtDestination(filledAtDestination);
 		}
 
-		travel(distance);
-		traveledDistance(distance);
+		travel(way);
+		traveledDistance(way.distance);
 
 		Release(truck);
 	}

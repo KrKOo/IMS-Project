@@ -11,10 +11,6 @@
 
 Configuration config = {
 	.simulationDuration = 1 * 365 * 24 * 60,
-	// .dieselFuelCapacity = 1000000,	 // 1000l
-	// .electricFuelCapacity = 540000,	 // 540kWh
-	// .dieselFuelConsumption = 350,	 // 35l/100km
-	// .electricFuelConsumption = 1100, // 1.1kWh/100km
 	.truckCargoCapacityMin = 7,
 	.truckCargoCapacityMax = 20,
 	.warehouseCapacity = 100000000,
@@ -32,13 +28,34 @@ Queue loadingDockQueue("Loading Dock Queue");
 Facility loadingDock(loadingDockQueue);
 Queue truckParkingQueue("Truck Parking Queue");
 
-Histogram truckPackageCountHistogram(0.0, 1.0, 21);
-Stat truckParkingTime("Truck Parking Time");
-
-Stat testStat("Test stat");
-
 int packagesManufactured = 0;
 int packagesDelivered = 0;
+
+// {km, min}
+std::vector<Way> ways = {
+	{193, 113},
+	{108, 76},
+	{85.3, 50},
+	{203, 119},
+	{191, 108},
+	{219, 133},
+	{132, 78},
+	{123, 104},
+	{123, 72},
+	{32.3, 23},
+	{190, 109},
+	{118, 74},
+	{192, 119},
+	{118, 74},
+	{193, 119},
+	{111, 81},
+	{86, 52},
+	{129, 81},
+	{197, 109},
+	{112, 98},
+	{261, 150},
+	{116, 68},
+	{103, 65}};
 
 class PackageGenerator : public Process
 {
@@ -107,7 +124,7 @@ void simulate(Arguments args)
 	Run();
 
 	loadingDock.Output();
-	truckParkingQueue.Output();
+
 	unsigned long totalFuelFilled = 0;
 	unsigned long totalTraveledDistance = 0;
 	unsigned long totalElectricityChargedAtFactory = 0;
@@ -129,9 +146,6 @@ void simulate(Arguments args)
 		totalParkingTime += electricTruck->truckParkingTime.Sum();
 	}
 
-	truckParkingTime.Output();
-
-	truckPackageCountHistogram.Output();
 	std::cout << "Packages manufactured: " << packagesManufactured << std::endl;
 	std::cout << "Packages delivered: " << packagesDelivered << std::endl;
 	std::cout << "Total fuel bought: " << totalFuelFilled << std::endl;
@@ -139,8 +153,6 @@ void simulate(Arguments args)
 	std::cout << "Total electricity charged at destination: " << totalElectricityChargedAtDestination << std::endl;
 	std::cout << "Total traveled distance: " << totalTraveledDistance << std::endl;
 	std::cout << "Total parking time: " << totalParkingTime << std::endl;
-
-	testStat.Output();
 }
 
 int main(int argc, char **argv)

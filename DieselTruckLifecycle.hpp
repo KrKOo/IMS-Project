@@ -8,7 +8,7 @@
 
 class DieselTruckLifecycle : public TruckLifecycle
 {
-	void travel(double distance);
+	void travel(Way way);
 	void Behavior();
 
 public:
